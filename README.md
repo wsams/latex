@@ -1,8 +1,8 @@
 # wsams/latex \LaTeX  environment
 
 This image provides a consistent \LaTeX environment built on **Debian Bookworm**.  It
-also includes `pandoc` for converting documents between formats.  A nightly GitHub
-Actions workflow builds the image and pushes it to Harbor automatically.
+also includes `pandoc` for converting documents between formats.  GitHub Actions
+workflows build the image and push it to Docker Hub automatically.
 
 ## Quick start
 
@@ -41,11 +41,11 @@ docker run --rm -v $(pwd):/work wsams/latex bash \
 
 The image ships a non-root `texuser` account (uid/gid **10001**) that matches the
 sandbox uid used by [wsams/siamtex](https://github.com/wsams/siamtex).  The
-`docker/tex-worker/Dockerfile` in that project can reference this Harbor image as
+`docker/tex-worker/Dockerfile` in that project can reference this Docker Hub image as
 its base instead of `texlive/texlive:latest-small`:
 
 ```dockerfile
-FROM <HARBOR_REGISTRY>/latex:latest
+FROM wsams/latex:latest
 
 WORKDIR /work
 USER texuser
@@ -53,22 +53,38 @@ ENTRYPOINT ["latexmk"]
 CMD ["-pdf", "-interaction=nonstopmode", "-halt-on-error", "main.tex"]
 ```
 
-Set `SIAMTEX_DOCKER_IMAGE` in siamtex's `.env` to the Harbor image tag.
+Set `SIAMTEX_DOCKER_IMAGE` in siamtex's `.env` to the Docker Hub image tag.
 
-## Nightly CI / Harbor push
+## Nightly CI / Docker Hub push
 
 The workflow `.github/workflows/nightly.yml` runs every night at 02:00 UTC (and on
-every push to `main`).  It requires four repository secrets:
+every push to `main`).  It requires two repository secrets:
 
 | Secret | Description |
 |---|---|
-| `HARBOR_HOST` | Registry hostname only, e.g. `harbor.example.com` |
-| `HARBOR_PROJECT` | Project path within Harbor, e.g. `wsams` |
-| `HARBOR_USERNAME` | Harbor robot-account name or user name |
-| `HARBOR_PASSWORD` | Harbor robot-account secret or password |
+| `REGISTRY_USERNAME` | Docker Hub username |
+| `REGISTRY_PASSWORD` | Docker Hub password or access token |
 
-The image is pushed as `$HARBOR_HOST/$HARBOR_PROJECT/latex` with three tags: `latest`,
-`YYYY-MM-DD`, and a short git SHA.
+The image is pushed as `wsams/latex` with three tags: `latest`, `YYYY-MM-DD`, and a
+short git SHA.
+
+## Semantic Release
+
+The workflow `.github/workflows/release.yml` runs on pushes to `main` (and manually
+via `workflow_dispatch`) and uses `semantic-release` with
+`@codedependant/semantic-release-docker` to publish versioned Docker tags for
+`wsams/latex` without using the compromised codfish action.
+
+It uses these secrets:
+
+| Secret | Description |
+|---|---|
+| `REGISTRY_USERNAME` | Docker Hub username |
+| `REGISTRY_PASSWORD` | Docker Hub password or access token |
+
+Semantic Release uses Conventional Commits to determine the next version and publishes
+Docker image tags including `latest`, `<version>`, `<major>-latest`, and
+`<major>.<minor>`.
 
 ## Available texlive packages (Debian Bookworm)
 
@@ -134,7 +150,7 @@ texlive-lang-spanish - TeX Live: Spanish
 Create your own `Dockerfile` with the following contents. In this example we'll install the `texlive-music` package.
 
 ```dockerfile
-FROM <HARBOR_REGISTRY>/latex:latest
+FROM wsams/latex:latest
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends texlive-music && \
@@ -151,4 +167,3 @@ docker build -t music-latex --pull .
 Once your new `music-latex` image is built you can [begin creating beautiful sheetmusic](https://packages.debian.org/sid/texlive-music). The commands will be similar to the previous examples.
 
 Have fun!
-
