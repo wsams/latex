@@ -1,0 +1,35 @@
+{
+  "branches": [
+    "main"
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/github",
+      {
+        "successComment": false,
+        "failComment": false
+      }
+    ],
+    [
+      "@codedependant/semantic-release-docker",
+      {
+        "dockerImage": "latex",
+        "dockerProject": "wsams",
+        "dockerTags": [
+          "latest",
+          "{{version}}",
+          "{{major}}-latest",
+          "{{major}}.{{minor}}"
+        ],
+        "dockerPlatform": [
+          "linux/amd64",
+          "linux/arm64"
+        ],
+        "dockerFile": "Dockerfile",
+        "dockerContext": "."
+      }
+    ]
+  ]
+}
