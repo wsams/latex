@@ -58,21 +58,22 @@ Set `SIAMTEX_DOCKER_IMAGE` in siamtex's `.env` to the Harbor image tag.
 ## Nightly CI / Harbor push
 
 The workflow `.github/workflows/nightly.yml` runs every night at 02:00 UTC (and on
-every push to `main`).  It requires three repository secrets:
+every push to `main`).  It requires four repository secrets:
 
 | Secret | Description |
 |---|---|
-| `HARBOR_REGISTRY` | Registry host + project prefix, e.g. `harbor.example.com/wsams` |
+| `HARBOR_HOST` | Registry hostname only, e.g. `harbor.example.com` |
+| `HARBOR_PROJECT` | Project path within Harbor, e.g. `wsams` |
 | `HARBOR_USERNAME` | Harbor robot-account name or user name |
 | `HARBOR_PASSWORD` | Harbor robot-account secret or password |
 
-The image is pushed as `$HARBOR_REGISTRY/latex` with three tags: `latest`,
+The image is pushed as `$HARBOR_HOST/$HARBOR_PROJECT/latex` with three tags: `latest`,
 `YYYY-MM-DD`, and a short git SHA.
 
 ## Available texlive packages (Debian Bookworm)
 
 ```
-These are all of the packages available in debian:bullseye
+These are all of the packages available in debian:bookworm
 
 texlive - TeX Live: A decent selection of the TeX Live packages
 texlive-base - TeX Live: Essential programs and files

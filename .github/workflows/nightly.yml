@@ -1,8 +1,9 @@
 # Nightly build: builds the wsams/latex image and pushes it to Harbor.
 #
 # Required repository secrets:
-#   HARBOR_REGISTRY  – registry host + project prefix, e.g. harbor.example.com/wsams
-#                      The final image will be  $HARBOR_REGISTRY/latex
+#   HARBOR_HOST      – registry hostname only, e.g. harbor.example.com
+#   HARBOR_PROJECT   – project path within Harbor, e.g. wsams
+#                      The final image will be  $HARBOR_HOST/$HARBOR_PROJECT/latex
 #   HARBOR_USERNAME  – Harbor robot-account or user name
 #   HARBOR_PASSWORD  – Harbor robot-account secret or password
 #
@@ -44,7 +45,7 @@ jobs:
       - name: Log in to Harbor
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.HARBOR_REGISTRY }}
+          registry: ${{ secrets.HARBOR_HOST }}
           username: ${{ secrets.HARBOR_USERNAME }}
           password: ${{ secrets.HARBOR_PASSWORD }}
 
@@ -52,7 +53,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.HARBOR_REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ secrets.HARBOR_HOST }}/${{ secrets.HARBOR_PROJECT }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value={{date 'YYYY-MM-DD'}}
