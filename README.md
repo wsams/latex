@@ -1,12 +1,16 @@
 # wsams/latex \LaTeX  environment
 
-This image was created to provide a consistent \LaTeX environment. It also provides the `pandoc` tool for converting documents into various types. For example, this `README.md` document can be converted into \LaTeX  and then further a PDF document. Give it a try,
+This image provides a consistent \LaTeX environment built on **Debian Bookworm**.  It
+also includes `pandoc` for converting documents between formats.  A nightly GitHub
+Actions workflow builds the image and pushes it to Harbor automatically.
+
+## Quick start
 
 ```
 ./compile-document.sh README
 ```
 
-The command above should produce a `README.pdf`. The script is just running the following Docker command,
+This produces a `README.pdf` using the following Docker command:
 
 ```
 docker run --rm -v $(pwd):/work wsams/latex bash \
@@ -15,17 +19,61 @@ docker run --rm -v $(pwd):/work wsams/latex bash \
         pdflatex README.tex"
 ```
 
-If you just want to convert a `resume.tex` document into a PDF using `pdflatex` you can run the following,
+Convert an existing `.tex` file to PDF:
 
 ```
 docker run --rm -v $(pwd):/work wsams/latex bash \
     -c "cd /work && pdflatex resume.tex"
 ```
 
-Of course you can do anything possible with the `texlive` packages. Below is a list currently available in `debian:bullseye`. Below the list is an example if you want to build your own custom image.
+## Included engines and tools
+
+| Tool | Purpose |
+|---|---|
+| `pdflatex` | Standard PDF output |
+| `xelatex` | Unicode / system-font support |
+| `lualatex` | Lua-scriptable PDF output |
+| `bibtex` / `biber` | Bibliography processing |
+| `latexmk` | Automated multi-pass compilation |
+| `pandoc` | Markdown → LaTeX / PDF conversion (citeproc built-in) |
+
+## siamtex compatibility
+
+The image ships a non-root `texuser` account (uid/gid **10001**) that matches the
+sandbox uid used by [wsams/siamtex](https://github.com/wsams/siamtex).  The
+`docker/tex-worker/Dockerfile` in that project can reference this Harbor image as
+its base instead of `texlive/texlive:latest-small`:
+
+```dockerfile
+FROM <HARBOR_REGISTRY>/latex:latest
+
+WORKDIR /work
+USER texuser
+ENTRYPOINT ["latexmk"]
+CMD ["-pdf", "-interaction=nonstopmode", "-halt-on-error", "main.tex"]
+```
+
+Set `SIAMTEX_DOCKER_IMAGE` in siamtex's `.env` to the Harbor image tag.
+
+## Nightly CI / Harbor push
+
+The workflow `.github/workflows/nightly.yml` runs every night at 02:00 UTC (and on
+every push to `main`).  It requires four repository secrets:
+
+| Secret | Description |
+|---|---|
+| `HARBOR_HOST` | Registry hostname only, e.g. `harbor.example.com` |
+| `HARBOR_PROJECT` | Project path within Harbor, e.g. `wsams` |
+| `HARBOR_USERNAME` | Harbor robot-account name or user name |
+| `HARBOR_PASSWORD` | Harbor robot-account secret or password |
+
+The image is pushed as `$HARBOR_HOST/$HARBOR_PROJECT/latex` with three tags: `latest`,
+`YYYY-MM-DD`, and a short git SHA.
+
+## Available texlive packages (Debian Bookworm)
 
 ```
-These are all of the packages available in debian:bullseye
+These are all of the packages available in debian:bookworm
 
 texlive - TeX Live: A decent selection of the TeX Live packages
 texlive-base - TeX Live: Essential programs and files
@@ -85,12 +133,13 @@ texlive-lang-spanish - TeX Live: Spanish
 
 Create your own `Dockerfile` with the following contents. In this example we'll install the `texlive-music` package.
 
-```
-FROM wsams/latex
+```dockerfile
+FROM <HARBOR_REGISTRY>/latex:latest
 
 RUN apt-get update && \
-    apt-get install -y texlive-music && \
-    apt-get clean -y
+    apt-get install -y --no-install-recommends texlive-music && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/*
 ```
 
 Now build your image,
